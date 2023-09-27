@@ -2,8 +2,8 @@ import os
 import sys
 _ = os.path.abspath(os.path.dirname(__file__))  # 返回当前文件路径
 _ = os.path.abspath(os.path.join(_, '..'))  # 返回根目录文件夹
-sys.path.append(_)  # _ 表示上级绝对目录，系统中添加上级目录，可以解决导入config不存的问题
-sys.path.append('..')  # '..' 表示上级相对目录，系统中添加上级目录，可以解决导入config不存的问题
+sys.path.append(_)  # _ 表示上级绝对目录，系统中添加上级目录
+sys.path.append('..')  # '..' 表示上级相对目录，系统中添加上级目录
 import ccxt
 import time
 import traceback
@@ -31,7 +31,6 @@ def run():
         symbol_list, min_qty, price_precision, min_notional = load_market(exchange, black_list)
 
         # =====更新所有账户的净值和持仓币种
-        # 函数注意点：如果其中一个账户出现问题，del这个账户避免影响其他账户操作；这里将账户配置拷贝一份，失败的账户可以在下个小时再重新尝试一下
         account_info = update_all_account_info(account_config.copy())
         # 判断是否没能成功读取任一账户
         if not len(account_info.keys()):  # 如果account_info数据为空，表示更新账户信息失败
@@ -47,7 +46,7 @@ def run():
         # =====sleep直到下一个整点小时
         random_time = max_time if is_ahead else 0  # 提前时间比index要快一点，这样可以在文件生成之后，立马下单
         run_time = sleep_until_run_time('1h', if_sleep=True, cheat_seconds=random_time)
-        # run_time = datetime.strptime('2023-08-10 11:00:00', "%Y-%m-%d %H:%M:%S")  # 以下代码可以测试的时候使用
+        # run_time = datetime.strptime('2023-08-10 11:00:00', "%Y-%m-%d %H:%M:%S")  # 测试的时候使用
 
         # =====判断指数的本地文件有没有更新成功。
         index_file_path = os.path.join(flag_path, f"{run_time.strftime('%Y-%m-%d_%H')}.flag")  # 构建本地flag文件地址
@@ -63,25 +62,25 @@ def run():
         for account in account_info:
             # ===获取与当前账号相关的配置信息
             # =获取指数相关信息
-            index_name = account_info[account]['index']  # 获取指数名称例如：index_name是"低价币指数"，详情可参考config中的account_config中的index配置
+            index_name = account_info[account]['index']  # 获取指数名称例如：index_name是"低价币指数"
             index_df = import_index_data(os.path.join(data_path, f'{index_name}.csv'))  # 从本地指数文件中读取数据，并且去重
             select_coin = import_select_coin(os.path.join(data_path, f'{index_name}_select_coin.csv'))  # 从本地指数文件中读取数据
 
             # =获取当前账户配置
-            strategy = account_info[account]['strategy']  # 获取当前账户的策略配置，详情可参考config中的account_config中的strategy配置
+            strategy = account_info[account]['strategy']  # 获取当前账户的策略配置
             position_df = account_info[account]['position_df']  # 获取当前账户的当前仓位
-            equity = account_info[account]['equity']  # 获取当前账户的净值（不含未实现盈亏），例如：equity是'99999'
+            equity = account_info[account]['equity']  # 获取当前账户的净值（不含未实现盈亏）
             current_exchange = account_info[account]['exchange']  # 获取当前账户的交易所对象
 
             # ===计算交易信号
-            # 计算择时信号s ignal以及当前持仓now_pos，期间可能会读取开仓时指数的净值，用来判断是否止损。
+            # 计算择时信号signal以及当前持仓now_pos，期间可能会读取开仓时指数的净值，用来判断是否止损。
             signal, now_pos = cal_signal(index_df, strategy, position_df, data_path, account)
             # signal = 1  # 测试的时候可以设置为 1(做多) 0(平仓) -1(做空) None(无信号)
             print(f'账户: {account}, 当前择时交易信号: ', signal)
 
             # 判断是否需要下单
             cond1 = signal is None or np.isnan(signal)  # 满足没有择时信号
-            cond2 = run_time.hour == utc_offset % 24  # 满足当前时间是utc0点（utc0点对应国内时间是北京时间早上8点）
+            cond2 = run_time.hour == utc_offset % 24  # 满足当前时间是utc0点
             cond3 = index_config[index_name]['offset'] == get_current_offset(run_time, utc_offset, index_config[index_name])  # 满足当前offset等于当前指数的offset
             is_change_index = cond2 and cond3  # 是否是成分币换仓
             # 判断是否需要跳过后续下单操作

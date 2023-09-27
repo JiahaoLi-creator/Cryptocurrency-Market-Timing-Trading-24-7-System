@@ -2,8 +2,8 @@ import os
 import sys
 _ = os.path.abspath(os.path.dirname(__file__))  # 返回当前文件路径
 _ = os.path.abspath(os.path.join(_, '..'))  # 返回根目录文件夹
-sys.path.append(_)  # _ 表示上级绝对目录，系统中添加上级目录，可以解决导入config不存的问题
-sys.path.append('..')  # '..' 表示上级相对目录，系统中添加上级目录，可以解决导入config不存的问题
+sys.path.append(_)  # _ 表示上级绝对目录，系统中添加上级目录
+sys.path.append('..')  # '..' 表示上级相对目录，系统中添加上级目录
 import ccxt
 import time
 import traceback
@@ -27,8 +27,8 @@ monitor_time = 90  # 10：表示每10秒监测一次
 # ===止盈配置
 stop_profit_config = {
     'MinPrice_MA': {  # 与account_config账户配置的账号名称保持一致
-        'stop_profit': 500,  # 7000: 表示账户总净值(包含未实现盈亏)超过7000阈值，触发止盈操作
-        'stop_profit_rate': 0.8,  # 0.5: 表示止盈操作，需要平掉当前50%的仓位
+        'stop_profit': 500,  # 500: 表示账户总净值(包含未实现盈亏)超过500阈值，触发止盈操作
+        'stop_profit_rate': 0.5,  # 0.5: 表示止盈操作，需要平掉当前50%的仓位
     },
     # 'Alpha95_Bolling': {  # 与account_config账户配置的账号名称保持一致
     #     'stop_profit': 6666,
@@ -57,7 +57,7 @@ def run():
             # ===获取账号配置
             # =获取当前账户配置
             position_df = account_info[account]['position_df']  # 获取当前账户的当前仓位
-            equity = account_info[account]['equity']  # 获取当前账户的净值（不含未实现盈亏），例如：equity是'99999'
+            equity = account_info[account]['equity']  # 获取当前账户的净值（不含未实现盈亏）
             current_exchange = account_info[account]['exchange']  # 获取当前账户的交易所对象
             # =获取止盈配置
             stop_profit = stop_profit_config[account]['stop_profit']  # 获取当前账户的止盈阈值

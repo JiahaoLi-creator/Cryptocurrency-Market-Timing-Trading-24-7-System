@@ -2,8 +2,8 @@ import os
 import sys
 _ = os.path.abspath(os.path.dirname(__file__))  # 返回当前文件路径
 _ = os.path.abspath(os.path.join(_, '..'))  # 返回根目录文件夹
-sys.path.append(_)  # _ 表示上级绝对目录，系统中添加上级目录，可以解决导入config不存的问题
-sys.path.append('..')  # '..' 表示上级相对目录，系统中添加上级目录，可以解决导入config不存的问题
+sys.path.append(_)  # _ 表示上级绝对目录，系统中添加上级目录
+sys.path.append('..')  # '..' 表示上级相对目录，系统中添加上级目录
 import ccxt
 import time
 import random
@@ -31,27 +31,26 @@ def run():
 
         # =====加载所有交易对的信息：交易对的最小下单量、最小下单金额
         symbol_list, min_qty, price_precision, min_notional = load_market(exchange, black_list)
-        # symbol_list = symbol_list[:20]  # 测试的时候可以减少获取币种数量，加快请求速度
+        # symbol_list = symbol_list[:20]
 
         # =====sleep直到下一个整点小时
-        random_time = random.randint(min_time, max_time) if is_ahead else 0  # 指数生成随机提前3-7分钟。不建议使用负数
+        random_time = random.randint(min_time, max_time) if is_ahead else 0  # 指数生成随机提前3-7分钟
         run_time = sleep_until_run_time('1h', if_sleep=True, cheat_seconds=random_time)
-        # run_time = datetime.strptime('2023-08-24 00:00:00', "%Y-%m-%d %H:%M:%S")  # 测试代码，测试的时候可以使用
+        # run_time = datetime.strptime('2023-08-24 00:00:00', "%Y-%m-%d %H:%M:%S")  # 测试代码
 
         # =====判断是否首次运行、是否指数换仓；确定要获取数据的币种
         # 判断是否首次运行、是否指数换仓
         is_first_run, is_adjust_index = judge_first_run_and_adjust_index(index_config, run_time, data_path, utc_offset)
-        is_update_all = is_first_run or is_adjust_index  # 设置全部更新标识。首次运行或者指数需要换仓，都是需要全部更新数据的
+        is_update_all = is_first_run or is_adjust_index  # 设置全部更新标识。
 
         # 确定要获取数据的币种
-        if is_update_all:  # 如果需要全部更新指数和选币，需要获取全量的symbol_list
+        if is_update_all:
             coin_list = symbol_list
-        else:  # 如果不需要全部更新指数和选币，那么就直接获取指数的成分币种即可，减少请求，加快速度
-            # 这里会获取最近3个周期的选币数据，理论上只要一个，为了做一点冗余
+        else:
             coin_list = get_coin_list_for_select_coin(index_config, data_path)  # 此处同时会更新index_config
 
         # =====获取指定币种的1小时K线
-        limit = get_kline_num if is_first_run else 399  # 首次运行k线数量设置为1500根。399: 两个持仓周期时间k线24*7*2=336，多取一点设置为399
+        limit = get_kline_num if is_first_run else 399  # 首次运行k线数量设置为1500根
         s_time = datetime.now()
         # 更新coin_list中所有币种的1小时K线数据
         symbol_candle_data = fetch_all_binance_swap_candle_data(exchange, coin_list, run_time, limit)  # 串行获取
@@ -63,7 +62,7 @@ def run():
             # 整理最近limit根K线，每个指数的选币结果。
             index_data = cal_factor_and_select_coin(symbol_candle_data, index_config, min_kline_size)
             print('完成选币数据整理 & 选币，花费时间：', datetime.now() - s_time)
-        else:  # 不需要全部更新的时候，其他情况直接copy我们之前读到的数据
+        else:
             index_data = index_config.copy()
 
         # =====遍历构建指数
